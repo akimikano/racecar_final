@@ -9,16 +9,20 @@ def listen_for_command():
     recognizer = sr.Recognizer()
 
     with sr.Microphone() as source:
-        print("Listening for a command...")
         audio = recognizer.listen(source)
 
     try:
         hypothesis = recognizer.recognize_sphinx(audio)
         print("Recognized:", hypothesis)
 
-        # Check for the specific word
         if "one" in hypothesis.lower():
-            print("Output: 1")
+            return 1
+        if "two" in hypothesis.lower():
+            return 2
+        if "three" in hypothesis.lower():
+            return 3
+        if "four" in hypothesis.lower():
+            return 4
 
     except sr.UnknownValueError:
         print("Sorry, could not understand audio.")

@@ -89,11 +89,20 @@ if __name__ == '__main__':
     main()
 
 
-def check_orthogonal_line(frame):
+def check_orthogonal_line(frame, x1, y1, x2, y2):
     """
     looks for orthogonal line to make 90 degrees turn
     """
-    return True
+    cropped_img = frame[y1:y2, x1:x2]
+    hsv = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2HSV)
+    low_yellow = np.array([18, 94, 140])
+    up_yellow = np.array([48, 255, 255])
+    mask = cv2.inRange(hsv, low_yellow, up_yellow)
+    edges = cv2.Canny(mask, 75, 150)
+    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 50, maxLineGap=100)
+    if lines:
+        return True
+    return False
 
 
 def follow_line(frame):
@@ -112,7 +121,10 @@ def follow_line(frame):
 
 
 def make_90_degrees_turn():
-    pass
+    time_to_wait = 3
+    turn(45)
+    time.sleep(time_to_wait)
+    turn(100)
 
 
 def position_tracker(curr_position):
@@ -127,11 +139,22 @@ def position_tracker(curr_position):
         curr_position += 1
 
 
+# Map which the car can navigate through looks like this:
+#  __(1)______________
+#  |                 |
+#  |                (2)
+#  |                 |
+#  |                 |
+# (3)                |
+#  |                 |
+#  ______________(3)__
+
+
 def start():
     current_position = 1
     position = position_tracker(current_position)
     while True:
-        target_position = listen_for_command()
+        target_position = int(input('Enter a target position: '))
         while current_position != target_position:
             frame = get_frame()
             alpha = 1.5  # Contrast control
@@ -139,14 +162,13 @@ def start():
 
             frame = cv2.convertScaleAbs(frame, alpha=alpha, beta=beta)
 
-            orthogonal_line_is_present = check_orthogonal_line(frame)
+            orthogonal_line_is_present = check_orthogonal_line(frame, 1000, 400, 1920, 600)
 
             if orthogonal_line_is_present:
                 make_90_degrees_turn()
+                current_position = next(position)
             else:
                 follow_line(frame)
-
-            current_position = next(position)
 
             cv2.imshow('frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
